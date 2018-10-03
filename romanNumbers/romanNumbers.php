@@ -1,8 +1,7 @@
-<?php // upload.php
+<?php
 /**
- *
+ *  Class for checking and converting roman numericals
  */
-
 class RomanNumber{
 
   private $number = "";
@@ -126,21 +125,93 @@ class RomanNumber{
   }
 }
 
+/**
+ * Class for managing files
+ */
+class FileHandler{
+  private $fileName;
+  private $content;
 
+  function __construct($name){
+    $this->fileName = $name;
+  }
 
+  public function safeFile(){
+    $name = $this->fileName['filename']['name'];
+    move_uploaded_file($this->fileName['filename']['tmp_name'], $name);
+  }
 
-$romanNumber = new RomanNumber("XCIV");
+  public function exists(){
+    return $this->fileName;
+  }
 
+  public function getNextLine(){
+    return fgets($this->content);
+  }
 
-if ($romanNumber->isValidRomanNumber() === true) {
-  echo "Die Zahl ist ok. ";
-  $val = $romanNumber->getIntValue();
-  echo "Der Wert ist: $val";
+  public function open(){
+    $this->content = fopen($this->fileName['filename']['tmp_name'], 'r+') or die("Failed to open file");
+  }
 
-}else{
-  echo "Die Zahl ist nicht so ganz römisch";
 }
 
+/**
+ * Class for showing content in HTML
+ */
+class Website{
 
+  public function showFileInput(){
+    echo <<<_END
+        <html><head><title>PHP Form Upload</title></head><body>
+        <form method='post' action='romanNumbers.php' enctype='multipart/form-data'>
+          Select File: <input type='file' name='filename' size='10'>
+          <input type='submit' value='Upload'>
+        </form>
+_END;
+  }
+  public function uploadSuccessful(){
+    echo "File has been uploaded.<br><br>";
+  }
+
+  public function transaltedIntoArabic($line, $val){
+    echo "<b>$line</b> in the arabic numerical system equals: <b>$val</b><br>";
+  }
+
+  public function transaltionFailed($line){
+    echo "<b>$line</b> is not a valid roman numeral!<br>";
+  }
+
+  public function close(){
+    echo "</body></html>";
+  }
+}
+
+$webseite = new Website();
+$webseite->showFileInput();
+
+$file = new FileHandler($_FILES);
+
+if ($file->exists()){
+  $webseite->uploadSuccessful();
+  $file->open();
+
+  while ($line = $file->getNextLine()) {
+    $romanNumber = new RomanNumber($line);
+
+    if ($romanNumber->isValidRomanNumber() === true) {
+      $val = $romanNumber->getIntValue();
+      $webseite->transaltedIntoArabic($line, $val);
+
+    }else{
+      if (empty(trim($line))) {
+        continue;
+      }
+      $webseite->transaltionFailed($line);
+    }
+  }
+
+}
+
+$webseite->close();
 
 ?>
